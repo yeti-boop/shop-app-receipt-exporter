@@ -63,6 +63,8 @@ The CSV is formatted as an invoice-style spreadsheet with sections:
 - Line item table: item name, variant, quantity, unit price, and extended total.
 - Totals: subtotal, discount, shipping, tax, and order total.
 
+Variant cells are exported as spreadsheet text so sizes such as `6-12` do not turn into dates when opened in Excel or Google Sheets.
+
 ## Privacy
 
 The extension runs entirely in your browser. It reads the visible Shop.app receipt page, builds a CSV file locally, and triggers a browser download. It does not use a server, third-party API, analytics service, or remote storage.

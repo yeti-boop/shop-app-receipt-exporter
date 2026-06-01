@@ -32,6 +32,11 @@
     return /[",\n\r]/.test(cleaned) ? `"${cleaned.replace(/"/g, '""')}"` : cleaned;
   }
 
+  function spreadsheetText(value) {
+    const cleaned = String(value ?? "");
+    return cleaned ? `\t${cleaned}` : "";
+  }
+
   function htmlEscape(value) {
     return String(value ?? "")
       .replace(/&/g, "&amp;")
@@ -289,7 +294,7 @@
       ["Item Name", "Variant", "Quantity", "Unit Price", "Extended Total"],
       ...items.map((item) => [
         item.itemName,
-        item.variant,
+        spreadsheetText(item.variant),
         item.quantity,
         formatMoney(item.unitPrice),
         formatMoney(item.extendedTotal)
