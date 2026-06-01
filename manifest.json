@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Shop.app Receipt Exporter",
-  "version": "1.0.0",
-  "description": "Export Shop.app order line items directly to CSV.",
+  "version": "1.1.0",
+  "description": "Preview and export Shop.app receipt details to CSV.",
   "permissions": [
     "activeTab",
     "scripting"
@@ -11,7 +11,7 @@
     "https://shop.app/*"
   ],
   "action": {
-    "default_title": "Export Receipt to CSV"
+    "default_title": "Preview Receipt Export"
   },
   "background": {
     "service_worker": "background.js"

@@ -1,13 +1,14 @@
 # Shop.app Receipt Exporter
 
-A lightweight Chrome extension that exports visible Shop.app receipt line items into an accounting-friendly CSV file.
+A lightweight Chrome extension that previews and exports visible Shop.app receipt details into an accounting-friendly CSV file.
 
 This extension is intended for personal or internal use when Shop.app's receipt view does not provide a useful printable or importable order format.
 
 ## Features
 
-- One-click export from a visible Shop.app order page.
-- CSV output with order number, item name, variant, quantity, unit price, and extended total.
+- One-click receipt preview from a visible Shop.app order page.
+- CSV output with order number, order date, merchant, customer, addresses, item name, variant, quantity, unit price, extended total, subtotal, discount, shipping, tax, and order total where visible.
+- In-page preview modal before downloading, so bad extraction is easier to catch.
 - Privacy-first local processing. No receipt data is sent to external services.
 - Unpacked Chrome extension install. No Chrome Web Store account is required.
 
@@ -43,7 +44,8 @@ This extension is intended for personal or internal use when Shop.app's receipt 
 2. Open a specific order receipt under `shop.app/orders`.
 3. Wait for the line items to finish loading.
 4. Click the extension icon.
-5. Chrome downloads `Shop_Receipt_[OrderNumber].csv`.
+5. Review the extracted receipt details in the preview modal.
+6. Click **Download CSV** or **Copy CSV**.
 
 ## Updating
 
@@ -55,11 +57,21 @@ This extension is intended for personal or internal use when Shop.app's receipt 
 ## CSV Columns
 
 - `Order Number`
+- `Order Date`
+- `Merchant`
+- `Customer`
+- `Shipping Address`
+- `Billing Address`
 - `Item Name`
 - `Variant`
 - `Quantity`
 - `Unit Price`
 - `Extended Total`
+- `Subtotal`
+- `Discount`
+- `Shipping`
+- `Tax`
+- `Order Total`
 
 ## Privacy
 
@@ -80,6 +92,7 @@ The extension runs entirely in your browser. It reads the visible Shop.app recei
 ## Known Limitations
 
 - This is a receipt line-item exporter, not a complete invoice generator.
-- It does not currently export tax, shipping, discounts, payment method, billing address, or shipping address.
+- It extracts invoice-level fields only when they are visible in the Shop.app page text.
+- It does not currently export payment method as a dedicated field.
 - Shop.app can change its frontend markup at any time. If exports stop finding items, the selectors in `content.js` may need to be adjusted.
 - Always compare the generated CSV against the visible receipt before using it for bookkeeping.
