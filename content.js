@@ -50,6 +50,33 @@
     return Number.isFinite(value) ? value.toFixed(2) : "";
   }
 
+  function detectCurrency(lines) {
+    const joined = lines.join(" ");
+    const codeMatch = joined.match(/\b(USD|CAD|AUD|NZD|GBP|EUR|JPY|CNY|HKD|SGD|MXN)\b/i);
+
+    if (codeMatch) {
+      return codeMatch[1].toUpperCase();
+    }
+
+    if (/[€]/.test(joined)) {
+      return "EUR";
+    }
+
+    if (/[£]/.test(joined)) {
+      return "GBP";
+    }
+
+    if (/[¥]/.test(joined)) {
+      return "JPY";
+    }
+
+    if (/[$]/.test(joined)) {
+      return "Unspecified $";
+    }
+
+    return "";
+  }
+
   function isQuantityOnly(value) {
     return /^x\s*\d+$/i.test(text(value)) || /^\d+\s+items?$/i.test(text(value));
   }
@@ -175,6 +202,7 @@
       orderNumber: getOrderNumber(lines),
       orderDate: getOrderDate(lines),
       merchant: getMerchant(lines),
+      currency: detectCurrency(lines),
       customer: getCustomer(lines),
       shippingAddress: blockAfter(["ship to", "shipping address", "delivery address"], lines),
       billingAddress: blockAfter(["billing address", "bill to"], lines),
@@ -246,44 +274,36 @@
   }
 
   function buildCsv(details, items) {
-    const headers = [
-      "Order Number",
-      "Order Date",
-      "Merchant",
-      "Customer",
-      "Shipping Address",
-      "Billing Address",
-      "Item Name",
-      "Variant",
-      "Quantity",
-      "Unit Price",
-      "Extended Total",
-      "Subtotal",
-      "Discount",
-      "Shipping",
-      "Tax",
-      "Order Total"
+    const rows = [
+      ["Shop.app Receipt Export"],
+      [],
+      ["Order Number", details.orderNumber],
+      ["Order Date", details.orderDate],
+      ["Merchant", details.merchant],
+      ["Currency", details.currency],
+      ["Customer", details.customer],
+      ["Shipping Address", details.shippingAddress],
+      ["Billing Address", details.billingAddress],
+      [],
+      ["Line Items"],
+      ["Item Name", "Variant", "Quantity", "Unit Price", "Extended Total"],
+      ...items.map((item) => [
+        item.itemName,
+        item.variant,
+        item.quantity,
+        formatMoney(item.unitPrice),
+        formatMoney(item.extendedTotal)
+      ]),
+      [],
+      ["Totals"],
+      ["Subtotal", formatMoney(details.subtotal)],
+      ["Discount", formatMoney(details.discount)],
+      ["Shipping", formatMoney(details.shipping)],
+      ["Tax", formatMoney(details.tax)],
+      ["Order Total", formatMoney(details.total)]
     ];
-    const rows = items.map((item) => [
-      details.orderNumber,
-      details.orderDate,
-      details.merchant,
-      details.customer,
-      details.shippingAddress,
-      details.billingAddress,
-      item.itemName,
-      item.variant,
-      item.quantity,
-      formatMoney(item.unitPrice),
-      formatMoney(item.extendedTotal),
-      formatMoney(details.subtotal),
-      formatMoney(details.discount),
-      formatMoney(details.shipping),
-      formatMoney(details.tax),
-      formatMoney(details.total)
-    ]);
 
-    return [headers, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");
+    return rows.map((row) => row.map(csvEscape).join(",")).join("\n");
   }
 
   function downloadCsv(details, items) {
@@ -300,7 +320,195 @@
   }
 
   function moneyCell(value) {
-    return value === null || value === undefined ? "" : `$${formatMoney(value)}`;
+    return value === null || value === undefined ? "" : formatMoney(value);
+  }
+
+  function displayMoney(value, currency) {
+    if (value === null || value === undefined) {
+      return "";
+    }
+
+    const amount = formatMoney(value);
+
+    if (currency === "Unspecified $") {
+      return `$${amount}`;
+    }
+
+    return currency ? `${amount} ${currency}` : amount;
+  }
+
+  function buildPrintableHtml(details, items) {
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+
+    return `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Shop Receipt ${htmlEscape(details.orderNumber)}</title>
+          <style>
+            @page { margin: 0.5in; }
+            body {
+              color: #111827;
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 12px;
+              margin: 0;
+            }
+            h1 {
+              font-size: 24px;
+              margin: 0 0 4px;
+            }
+            h2 {
+              font-size: 14px;
+              margin: 24px 0 8px;
+            }
+            .header {
+              display: flex;
+              justify-content: space-between;
+              gap: 24px;
+              border-bottom: 2px solid #111827;
+              padding-bottom: 14px;
+            }
+            .meta {
+              min-width: 220px;
+              text-align: right;
+            }
+            .grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 18px;
+              margin-top: 18px;
+            }
+            .label {
+              color: #6b7280;
+              font-size: 11px;
+              font-weight: 700;
+              letter-spacing: 0.04em;
+              text-transform: uppercase;
+            }
+            .box {
+              border: 1px solid #d1d5db;
+              padding: 10px;
+              min-height: 46px;
+              white-space: pre-wrap;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 8px;
+            }
+            th, td {
+              border-bottom: 1px solid #e5e7eb;
+              padding: 7px 8px;
+              text-align: left;
+              vertical-align: top;
+            }
+            th {
+              background: #f3f4f6;
+              font-weight: 700;
+            }
+            .num {
+              text-align: right;
+              white-space: nowrap;
+            }
+            .totals {
+              margin-left: auto;
+              margin-top: 18px;
+              width: 280px;
+            }
+            .totals td {
+              border-bottom: 0;
+              padding: 4px 0;
+            }
+            .total-row td {
+              border-top: 2px solid #111827;
+              font-size: 14px;
+              font-weight: 700;
+              padding-top: 8px;
+            }
+            .footnote {
+              color: #6b7280;
+              font-size: 11px;
+              margin-top: 24px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>Receipt Invoice</h1>
+              <div>${htmlEscape(details.merchant || "Shop.app")}</div>
+            </div>
+            <div class="meta">
+              <div><span class="label">Order</span> ${htmlEscape(details.orderNumber)}</div>
+              <div><span class="label">Date</span> ${htmlEscape(details.orderDate)}</div>
+              <div><span class="label">Items</span> ${items.length} lines / ${totalQuantity} units</div>
+              <div><span class="label">Currency</span> ${htmlEscape(details.currency || "Not detected")}</div>
+            </div>
+          </div>
+          <div class="grid">
+            <div>
+              <div class="label">Customer</div>
+              <div class="box">${htmlEscape(details.customer)}</div>
+            </div>
+            <div>
+              <div class="label">Ship To</div>
+              <div class="box">${htmlEscape(details.shippingAddress)}</div>
+            </div>
+            <div>
+              <div class="label">Bill To</div>
+              <div class="box">${htmlEscape(details.billingAddress)}</div>
+            </div>
+          </div>
+          <h2>Line Items</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Variant</th>
+                <th class="num">Qty</th>
+                <th class="num">Unit</th>
+                <th class="num">Line Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((item) => `
+                <tr>
+                  <td>${htmlEscape(item.itemName)}</td>
+                  <td>${htmlEscape(item.variant)}</td>
+                  <td class="num">${item.quantity}</td>
+                  <td class="num">${displayMoney(item.unitPrice, details.currency)}</td>
+                  <td class="num">${displayMoney(item.extendedTotal, details.currency)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+          <table class="totals">
+            <tbody>
+              <tr><td>Subtotal</td><td class="num">${displayMoney(details.subtotal, details.currency)}</td></tr>
+              <tr><td>Discount</td><td class="num">${displayMoney(details.discount, details.currency)}</td></tr>
+              <tr><td>Shipping</td><td class="num">${displayMoney(details.shipping, details.currency)}</td></tr>
+              <tr><td>Tax</td><td class="num">${displayMoney(details.tax, details.currency)}</td></tr>
+              <tr class="total-row"><td>Total</td><td class="num">${displayMoney(details.total, details.currency)}</td></tr>
+            </tbody>
+          </table>
+          <div class="footnote">Generated locally from the visible Shop.app receipt page. Verify against the original receipt before bookkeeping use.</div>
+        </body>
+      </html>`;
+  }
+
+  function printInvoice(details, items) {
+    const printWindow = window.open("", "_blank", "noopener,noreferrer");
+
+    if (!printWindow) {
+      alert("Print window was blocked. Allow popups for this page and try again.");
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(buildPrintableHtml(details, items));
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   }
 
   function renderDetail(label, value) {
@@ -433,10 +641,11 @@
           <div class="sre-grid">
             ${renderDetail("Merchant", details.merchant)}
             ${renderDetail("Order Date", details.orderDate)}
+            ${renderDetail("Currency", details.currency || "Not detected")}
             ${renderDetail("Customer", details.customer)}
-            ${renderDetail("Shipping", moneyCell(details.shipping))}
-            ${renderDetail("Tax", moneyCell(details.tax))}
-            ${renderDetail("Total", moneyCell(details.total))}
+            ${renderDetail("Shipping", displayMoney(details.shipping, details.currency))}
+            ${renderDetail("Tax", displayMoney(details.tax, details.currency))}
+            ${renderDetail("Total", displayMoney(details.total, details.currency))}
             ${renderDetail("Ship To", details.shippingAddress)}
             ${renderDetail("Bill To", details.billingAddress)}
           </div>
@@ -457,8 +666,8 @@
                     <td>${htmlEscape(item.itemName)}</td>
                     <td>${htmlEscape(item.variant)}</td>
                     <td class="sre-num">${item.quantity}</td>
-                    <td class="sre-num">${moneyCell(item.unitPrice)}</td>
-                    <td class="sre-num">${moneyCell(item.extendedTotal)}</td>
+                    <td class="sre-num">${displayMoney(item.unitPrice, details.currency)}</td>
+                    <td class="sre-num">${displayMoney(item.extendedTotal, details.currency)}</td>
                   </tr>
                 `).join("")}
               </tbody>
@@ -466,6 +675,7 @@
           ` : `<div class="sre-empty">No line items were found. Make sure the Shop.app receipt is fully loaded.</div>`}
         </div>
         <div class="sre-actions">
+          <button type="button" data-sre-print ${items.length ? "" : "disabled"}>Print Invoice</button>
           <button type="button" data-sre-copy>Copy CSV</button>
           <button type="button" class="sre-primary" data-sre-download ${items.length ? "" : "disabled"}>Download CSV</button>
         </div>
@@ -479,6 +689,7 @@
       }
     });
     root.querySelector("[data-sre-download]").addEventListener("click", () => downloadCsv(details, items));
+    root.querySelector("[data-sre-print]").addEventListener("click", () => printInvoice(details, items));
     root.querySelector("[data-sre-copy]").addEventListener("click", async (event) => {
       await navigator.clipboard.writeText(buildCsv(details, items));
       event.target.textContent = "Copied";

@@ -7,8 +7,9 @@ This extension is intended for personal or internal use when Shop.app's receipt 
 ## Features
 
 - One-click receipt preview from a visible Shop.app order page.
-- CSV output with order number, order date, merchant, customer, addresses, item name, variant, quantity, unit price, extended total, subtotal, discount, shipping, tax, and order total where visible.
+- Invoice-style CSV output with order details, currency, line items, and totals in separate sections.
 - In-page preview modal before downloading, so bad extraction is easier to catch.
+- Print-friendly invoice view for paper or PDF output.
 - Privacy-first local processing. No receipt data is sent to external services.
 - Unpacked Chrome extension install. No Chrome Web Store account is required.
 
@@ -45,7 +46,7 @@ This extension is intended for personal or internal use when Shop.app's receipt 
 3. Wait for the line items to finish loading.
 4. Click the extension icon.
 5. Review the extracted receipt details in the preview modal.
-6. Click **Download CSV** or **Copy CSV**.
+6. Click **Download CSV**, **Copy CSV**, or **Print Invoice**.
 
 ## Updating
 
@@ -54,24 +55,13 @@ This extension is intended for personal or internal use when Shop.app's receipt 
 3. Open `chrome://extensions/`.
 4. Click **Reload** on the Shop.app Receipt Exporter card.
 
-## CSV Columns
+## CSV Layout
 
-- `Order Number`
-- `Order Date`
-- `Merchant`
-- `Customer`
-- `Shipping Address`
-- `Billing Address`
-- `Item Name`
-- `Variant`
-- `Quantity`
-- `Unit Price`
-- `Extended Total`
-- `Subtotal`
-- `Discount`
-- `Shipping`
-- `Tax`
-- `Order Total`
+The CSV is formatted as an invoice-style spreadsheet with sections:
+
+- Receipt header: order number, order date, merchant, currency, customer, shipping address, and billing address.
+- Line item table: item name, variant, quantity, unit price, and extended total.
+- Totals: subtotal, discount, shipping, tax, and order total.
 
 ## Privacy
 
@@ -93,6 +83,7 @@ The extension runs entirely in your browser. It reads the visible Shop.app recei
 
 - This is a receipt line-item exporter, not a complete invoice generator.
 - It extracts invoice-level fields only when they are visible in the Shop.app page text.
+- Currency is detected from visible currency codes such as `CAD` or `USD` when present. If the page only shows `$`, the extension reports `Unspecified $`.
 - It does not currently export payment method as a dedicated field.
 - Shop.app can change its frontend markup at any time. If exports stop finding items, the selectors in `content.js` may need to be adjusted.
 - Always compare the generated CSV against the visible receipt before using it for bookkeeping.

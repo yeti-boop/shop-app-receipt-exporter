@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Shop.app Receipt Exporter",
-  "version": "1.1.0",
-  "description": "Preview and export Shop.app receipt details to CSV.",
+  "version": "1.2.0",
+  "description": "Preview, print, and export Shop.app receipt details.",
   "permissions": [
     "activeTab",
     "scripting"
